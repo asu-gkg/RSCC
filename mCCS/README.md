@@ -167,3 +167,16 @@ cd eval/plot
 python real_workload/plot_jct.py
 ```
 The figure will be generated to `eval/plot/figures/real_workload_jct.pdf`.
+
+
+## How to Debug it?
+
+Launch main process
+```
+./target/release/mccs --config mccs.toml --host 0 
+```
+
+运行例子
+``` 
+./target/release/allreduce_bench --root-addr 127.0.0.1 --rank 0 --num-ranks 1 --cuda-device-idx 0 --size 4194304 --size-in-byte
+```

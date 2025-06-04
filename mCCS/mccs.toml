@@ -33,7 +33,7 @@ adaptive_routing = false
 ar_threshold = 8192
 pci_relaxed_ordering = false
 gdr_flush_disable = true
-socket_if_prefix = "rdma"
+socket_if_prefix = "ens17f0np0"
 
 [comm_global_config.net]
 gdr_enable = false
