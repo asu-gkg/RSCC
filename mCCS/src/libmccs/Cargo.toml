@@ -1,0 +1,17 @@
+[package]
+name = "libmccs"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+cuda-runtime-sys = { path = "../cuda-sys/cuda-runtime-sys" }
+nvml-sys = { path = "../cuda-sys/nvml-sys" }
+
+ipc = { path = "../ipc", features = ["mccs", "customer"] }
+
+lazy_static = "1.4.0"
+thiserror = "1.0.37"
+serde_json = "1.0.89"
+libnuma = "0.0.4"
