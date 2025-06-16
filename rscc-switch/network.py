@@ -7,39 +7,49 @@ net.setLogLevel('info')
 net.setCompiler(p4rt=True)
 
 # Network definition
-net.addP4RuntimeSwitch('s1')
-net.addP4RuntimeSwitch('s2')
-net.addP4RuntimeSwitch('s3')
-net.addP4RuntimeSwitch('s4')
-net.addP4RuntimeSwitch('s5')
-net.addP4RuntimeSwitch('s6')
-net.addP4RuntimeSwitch('s7')
-net.setP4SourceAll('rsvp.p4')
+# Spine switches
+net.addP4RuntimeSwitch('spine1')
+net.addP4RuntimeSwitch('spine2')
 
+# Leaf switches
+net.addP4RuntimeSwitch('leaf1')
+net.addP4RuntimeSwitch('leaf2')
+net.addP4RuntimeSwitch('leaf3')
+net.addP4RuntimeSwitch('leaf4')
+
+net.setP4SourceAll('rscc.p4')
+
+# Hosts
 net.addHost('h1')
 net.addHost('h2')
 net.addHost('h3')
 net.addHost('h4')
 net.addHost('h5')
 net.addHost('h6')
+net.addHost('h7')
+net.addHost('h8')
 
-net.addLink("h1", "s1")
-net.addLink("h2", "s1")
-net.addLink("s1", "s2")
-net.addLink("s1", "s3")
-net.addLink("s2", "s4")
-net.addLink("s3", "s4")
-net.addLink("s2", "s5")
-net.addLink("s3", "s6")
-net.addLink("s4", "s5")
-net.addLink("s4", "s6")
-net.addLink("s5", "s7")
-net.addLink("s6", "s7")
-net.addLink("s7", "h5")
-net.addLink("s7", "h6")
-net.addLink("h3", "s3")
-net.addLink("h4", "s5")
-net.setBwAll(10)
+# Links between spine and leaf switches
+net.addLink("spine1", "leaf1")
+net.addLink("spine1", "leaf2")
+net.addLink("spine1", "leaf3")
+net.addLink("spine1", "leaf4")
+net.addLink("spine2", "leaf1")
+net.addLink("spine2", "leaf2")
+net.addLink("spine2", "leaf3")
+net.addLink("spine2", "leaf4")
+
+# Links between leaf switches and hosts
+net.addLink("leaf1", "h1")
+net.addLink("leaf1", "h2")
+net.addLink("leaf2", "h3")
+net.addLink("leaf2", "h4")
+net.addLink("leaf3", "h5")
+net.addLink("leaf3", "h6")
+net.addLink("leaf4", "h7")
+net.addLink("leaf4", "h8")
+
+net.setBwAll(40*1000)
 
 # Assignment strategy
 net.l3()

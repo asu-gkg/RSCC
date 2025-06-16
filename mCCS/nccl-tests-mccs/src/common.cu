@@ -11,6 +11,7 @@
 #include <getopt.h>
 #include <libgen.h>
 #include "cuda.h"
+#include <string>
 
 #include "../verifiable/verifiable.h"
 
