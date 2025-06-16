@@ -49,7 +49,7 @@ net.addLink("leaf3", "h6")
 net.addLink("leaf4", "h7")
 net.addLink("leaf4", "h8")
 
-net.setBwAll(40*1000)
+net.setBwAll(10)
 
 # Assignment strategy
 net.l3()

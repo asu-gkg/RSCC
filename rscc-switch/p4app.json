@@ -18,7 +18,7 @@
     "topology": {
       "assignment_strategy": "l3",
       "default": {
-        "bw": 40000
+        "bw": 10
       },
       "links": [["spine1", "leaf1"],
                 ["spine1", "leaf2"],
@@ -57,16 +57,22 @@
       },
       "switches": {
         "spine1": {
+          "cli_input": "sw-commands/spine1-commands.txt"
         },
         "spine2": {
+          "cli_input": "sw-commands/spine2-commands.txt"
         },
         "leaf1": {
+          "cli_input": "sw-commands/leaf1-commands.txt"
         },
         "leaf2": {
+          "cli_input": "sw-commands/leaf2-commands.txt"
         },
         "leaf3": {
+          "cli_input": "sw-commands/leaf3-commands.txt"
         },
         "leaf4": {
+          "cli_input": "sw-commands/leaf4-commands.txt"
         }
       }
     }

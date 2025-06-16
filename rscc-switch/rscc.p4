@@ -1,177 +1,142 @@
+/* -*- P4_16 -*- */
 #include <core.p4>
 #include <v1model.p4>
+
+//My includes
 #include "headers.p4"
 #include "parsers.p4"
 
-// Header definitions
-header ethernet_t {
-    bit<48> dst_addr;
-    bit<48> src_addr;
-    bit<16> ether_type;
+/*************************************************************************
+************   C H E C K S U M    V E R I F I C A T I O N   *************
+*************************************************************************/
+
+control MyVerifyChecksum(inout headers hdr, inout metadata meta) {
+    apply {  }
 }
 
-header ipv4_t {
-    bit<4>  version;
-    bit<4>  ihl;
-    bit<8>  diffserv;
-    bit<16> total_len;
-    bit<16> identification;
-    bit<3>  flags;
-    bit<13> frag_offset;
-    bit<8>  ttl;
-    bit<8>  protocol;
-    @checksum
-    bit<16> hdr_checksum;
-    bit<32> src_addr;
-    bit<32> dst_addr;
-}
+/*************************************************************************
+**************  I N G R E S S   P R O C E S S I N G   *******************
+*************************************************************************/
 
-// Struct to hold extracted headers
-struct headers {
-    ethernet_t ethernet;
-    ipv4_t     ipv4;
-}
-
-// Parser
-parser MyParser(packet_in pkt,
-               out headers hdr,
-               out standard_metadata_t standard_meta) {
-    state start {
-        pkt.extract(hdr.ethernet);
-        transition select(hdr.ethernet.ether_type) {
-            0x0800: parse_ipv4;
-            default: accept;
-        }
-    }
-
-    state parse_ipv4 {
-        pkt.extract(hdr.ipv4);
-        hdr.ipv4.verify_checksum(16w0, ChecksumLocation.Internet); // Verify IPv4 header checksum
-        transition accept;
-    }
-}
-
-// Ingress processing
 control MyIngress(inout headers hdr,
                   inout metadata meta,
-                  inout standard_metadata_t standard_meta) {
-
+                  inout standard_metadata_t standard_metadata) {
     action drop() {
-        mark_to_drop(standard_meta);
+        mark_to_drop(standard_metadata);
     }
 
-    // Action for L2 forwarding
-    action set_egress_port(bit<9> port) {
-        standard_meta.egress_spec = port;
+    action ecmp_group(bit<14> ecmp_group_id, bit<16> num_nhops){
+        hash(meta.ecmp_hash,
+	    HashAlgorithm.crc16,
+	    (bit<1>)0,
+	    { hdr.ipv4.srcAddr,
+	      hdr.ipv4.dstAddr,
+          hdr.tcp.srcPort,
+          hdr.tcp.dstPort,
+          hdr.ipv4.protocol},
+	    num_nhops);
+
+	    meta.ecmp_group_id = ecmp_group_id;
     }
 
-    // Action for IPv4 forwarding (sets DMAC, egress port, and decrements TTL)
-    action ipv4_set_dmac_and_forward(mac_addr_t next_hop_mac, bit<9> out_port) {
-        hdr.ethernet.dst_addr = next_hop_mac;
-        standard_meta.egress_spec = out_port;
+    action set_nhop(macAddr_t dstAddr, egressSpec_t port) {
+
+        //set the src mac address as the previous dst, this is not correct right?
+        hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
+
+       //set the destination mac address that we got from the match in the table
+        hdr.ethernet.dstAddr = dstAddr;
+
+        //set the output port that we also get from the table
+        standard_metadata.egress_spec = port;
+
+        //decrease ttl by 1
         hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
     }
 
-    // Action Profile for ECMP group members
-    action_profile ecmp_group_action_profile {
-        actions {
-            ipv4_set_dmac_and_forward;
-        }
-        size = 256; // Max number of unique members/paths
-    }
-
-    // Action Selector for ECMP load balancing
-    action_selector ecmp_selector(ecmp_group_action_profile) {
-        key {
-            hdr.ipv4.src_addr;
-            hdr.ipv4.dst_addr;
-            hdr.ipv4.protocol;
-            // Optionally, include L4 ports for finer-grained ECMP hashing
-            // hdr.tcp.src_port;
-            // hdr.tcp.dst_port;
-        }
-        algorithm: Crc16;
-        size: 64; // Max number of groups
-        group_size: 16; // Max members per group in each group
-    }
-
-    // L2 Forwarding Table
-    table l2_fwd_table {
+    table ecmp_group_to_nhop {
         key = {
-            hdr.ethernet.dst_addr: exact;
+            meta.ecmp_group_id:    exact;
+            meta.ecmp_hash: exact;
         }
         actions = {
-            set_egress_port;
+            drop;
+            set_nhop;
+        }
+        size = 1024;
+    }
+
+    table ipv4_lpm {
+        key = {
+            hdr.ipv4.dstAddr: lpm;
+        }
+        actions = {
+            set_nhop;
+            ecmp_group;
             drop;
         }
         size = 1024;
-        const default_action = drop();
-    }
-
-    // IPv4 Longest Prefix Match (LPM) Table for routing with ECMP
-    table ipv4_lpm_table {
-        key = {
-            hdr.ipv4.dst_addr: lpm;
-        }
-        actions = {
-            ipv4_set_dmac_and_forward;
-            ecmp_selector; // For ECMP routes, action points to the selector
-            drop;
-        }
-        const default_action = drop();
-        size = 1024;
+        default_action = drop;
     }
 
     apply {
-        // Initial checks for parser errors
-        if (standard_meta.parser_err != 0) {
-            drop();
-            return;
-        }
-
-        if (hdr.ipv4.isValid()) {
-            // Check TTL before attempting forwarding
-            if (hdr.ipv4.ttl <= 1) {
-                drop();
-                return;
+        if (hdr.ipv4.isValid()){
+            switch (ipv4_lpm.apply().action_run){
+                ecmp_group: {
+                    ecmp_group_to_nhop.apply();
+                }
             }
-            // Apply IPv4 LPM table for routing or ECMP
-            ipv4_lpm_table.apply();
-        } else if (hdr.ethernet.isValid()) {
-            // If not IPv4, try L2 forwarding (e.g., ARP, other L2 traffic)
-            l2_fwd_table.apply();
-        } else {
-            // Drop packets that are not Ethernet or IPv4 and have no specific handlers
-            drop();
         }
     }
 }
 
-// Egress processing (empty for this basic setup)
+/*************************************************************************
+****************  E G R E S S   P R O C E S S I N G   *******************
+*************************************************************************/
+
 control MyEgress(inout headers hdr,
                  inout metadata meta,
-                 inout standard_metadata_t standard_meta) {
+                 inout standard_metadata_t standard_metadata) {
     apply {
-        // No specific egress processing needed for basic L2/L3 and ECMP beyond deparsing
+
     }
 }
 
-// Deparser
-control MyDeparser(packet_out pkt, in headers hdr) {
-    apply {
-        pkt.emit(hdr.ethernet);
-        if (hdr.ipv4.isValid()) {
-            hdr.ipv4.update_checksum(16w0, ChecksumLocation.Internet); // Recalculate IPv4 header checksum
-            pkt.emit(hdr.ipv4);
-        }
-        // Emit other headers if added later
+/*************************************************************************
+*************   C H E C K S U M    C O M P U T A T I O N   **************
+*************************************************************************/
+
+control MyComputeChecksum(inout headers hdr, inout metadata meta) {
+     apply {
+	update_checksum(
+	    hdr.ipv4.isValid(),
+            { hdr.ipv4.version,
+	          hdr.ipv4.ihl,
+              hdr.ipv4.dscp,
+              hdr.ipv4.ecn,
+              hdr.ipv4.totalLen,
+              hdr.ipv4.identification,
+              hdr.ipv4.flags,
+              hdr.ipv4.fragOffset,
+              hdr.ipv4.ttl,
+              hdr.ipv4.protocol,
+              hdr.ipv4.srcAddr,
+              hdr.ipv4.dstAddr },
+              hdr.ipv4.hdrChecksum,
+              HashAlgorithm.csum16);
     }
 }
 
-// Top-level P4 program
+/*************************************************************************
+***********************  S W I T C H  *******************************
+*************************************************************************/
+
+//switch architecture
 V1Switch(
-    MyParser(),
-    MyIngress(),
-    MyEgress(),
-    MyDeparser()
+MyParser(),
+MyVerifyChecksum(),
+MyIngress(),
+MyEgress(),
+MyComputeChecksum(),
+MyDeparser()
 ) main;

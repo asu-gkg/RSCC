@@ -1,57 +1,64 @@
-// headers.p4
-// This file defines the common headers and metadata structures.
+/*************************************************************************
+*********************** H E A D E R S  ***********************************
+*************************************************************************/
 
-// Header definitions
+const bit<16> TYPE_IPV4 = 0x800;
+
+typedef bit<9>  egressSpec_t;
+typedef bit<48> macAddr_t;
+typedef bit<32> ip4Addr_t;
+
+
 header ethernet_t {
-    bit<48> dst_addr;
-    bit<48> src_addr;
-    bit<16> ether_type;
+    macAddr_t dstAddr;
+    macAddr_t srcAddr;
+    bit<16>   etherType;
 }
 
 header ipv4_t {
-    bit<4>  version;
-    bit<4>  ihl;
-    bit<8>  diffserv;
-    bit<16> total_len;
-    bit<16> identification;
-    bit<3>  flags;
-    bit<13> frag_offset;
-    bit<8>  ttl;
-    bit<8>  protocol;
-    @checksum
-    bit<16> hdr_checksum;
-    bit<32> src_addr;
-    bit<32> dst_addr;
+    bit<4>    version;
+    bit<4>    ihl;
+    bit<6>    dscp;
+    bit<2>    ecn;
+    bit<16>   totalLen;
+    bit<16>   identification;
+    bit<3>    flags;
+    bit<13>   fragOffset;
+    bit<8>    ttl;
+    bit<8>    protocol;
+    bit<16>   hdrChecksum;
+    ip4Addr_t srcAddr;
+    ip4Addr_t dstAddr;
 }
 
-header tcp_t {
-    bit<16> src_port;
-    bit<16> dst_port;
-    bit<32> seq_no;
-    bit<32> ack_no;
-    bit<4>  data_offset;
+header tcp_t{
+    bit<16> srcPort;
+    bit<16> dstPort;
+    bit<32> seqNo;
+    bit<32> ackNo;
+    bit<4>  dataOffset;
     bit<4>  res;
-    bit<2>  ecn;
-    bit<6>  ctrl;
+    bit<1>  cwr;
+    bit<1>  ece;
+    bit<1>  urg;
+    bit<1>  ack;
+    bit<1>  psh;
+    bit<1>  rst;
+    bit<1>  syn;
+    bit<1>  fin;
     bit<16> window;
-    @checksum
     bit<16> checksum;
-    bit<16> urg_ptr;
+    bit<16> urgentPtr;
 }
 
-typedef bit<48> mac_addr_t;
-typedef bit<32> ip4_addr_t;
-
-// Struct to hold extracted headers
-struct headers {
-    ethernet_t ethernet;
-    ipv4_t     ipv4;
-    tcp_t      tcp;
-}
-
-// Metadata struct (can be customized as needed)
 struct metadata {
-    // Add custom metadata fields here if needed by your logic.
-    bit<32> my_custom_field; // Example field
+    bit<14> ecmp_hash;
+    bit<14> ecmp_group_id;
+}
+
+struct headers {
+    ethernet_t   ethernet;
+    ipv4_t       ipv4;
+    tcp_t        tcp;
 }
 
