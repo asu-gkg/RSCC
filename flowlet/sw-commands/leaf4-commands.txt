@@ -1,0 +1,22 @@
+# Leaf4 Commands
+# 本地主机路由
+table_add ipv4_lpm set_nhop 10.4.7.2/32 => 00:00:0a:04:07:02 1
+table_add ipv4_lpm set_nhop 10.4.8.2/32 => 00:00:0a:04:08:02 2
+
+# 到其他网段的ECMP路由
+table_add ipv4_lpm ecmp_group 10.1.0.0/16 => 0 2
+table_add ipv4_lpm ecmp_group 10.2.0.0/16 => 1 2
+table_add ipv4_lpm ecmp_group 10.3.0.0/16 => 2 2
+
+# ECMP组到下一跳的映射
+# 组0：到10.1.0.0/16 (leaf1)
+table_add ecmp_group_to_nhop set_nhop 0 0 => 4a:ce:3b:d3:f9:e6 3
+table_add ecmp_group_to_nhop set_nhop 0 1 => de:18:61:21:18:ac 4
+
+# 组1：到10.2.0.0/16 (leaf2)
+table_add ecmp_group_to_nhop set_nhop 1 0 => 4a:ce:3b:d3:f9:e6 3
+table_add ecmp_group_to_nhop set_nhop 1 1 => de:18:61:21:18:ac 4
+
+# 组2：到10.3.0.0/16 (leaf3)
+table_add ecmp_group_to_nhop set_nhop 2 0 => 4a:ce:3b:d3:f9:e6 3
+table_add ecmp_group_to_nhop set_nhop 2 1 => de:18:61:21:18:ac 4

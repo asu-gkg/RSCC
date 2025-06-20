@@ -1,0 +1,6 @@
+# Spine1 Commands
+# 到各个leaf的路由
+table_add ipv4_lpm set_nhop 10.1.0.0/16 => ee:19:bf:66:6a:62 1
+table_add ipv4_lpm set_nhop 10.2.0.0/16 => 02:47:25:ad:af:21 2
+table_add ipv4_lpm set_nhop 10.3.0.0/16 => 12:39:e7:ad:41:a8 3
+table_add ipv4_lpm set_nhop 10.4.0.0/16 => 92:61:71:31:3b:df 4

@@ -1,0 +1,80 @@
+{
+    "p4_src": "rscc.p4",
+    "cli": true,
+    "pcap_dump": false,
+    "enable_log": true,
+    "switch_node":
+    {
+      "module_name": "p4utils.mininetlib.node",
+      "object_name": "P4RuntimeSwitch"
+    },
+    "compiler_module":
+    {
+      "options":
+      {
+        "p4rt": true
+      }
+    },
+    "topology": {
+      "assignment_strategy": "l3",
+      "default": {
+        "bw": 10
+      },
+      "links": [["spine1", "leaf1"],
+                ["spine1", "leaf2"],
+                ["spine1", "leaf3"],
+                ["spine1", "leaf4"],
+                ["spine2", "leaf1"],
+                ["spine2", "leaf2"],
+                ["spine2", "leaf3"],
+                ["spine2", "leaf4"],
+                ["leaf1", "h1"],
+                ["leaf1", "h2"],
+                ["leaf2", "h3"],
+                ["leaf2", "h4"],
+                ["leaf3", "h5"],
+                ["leaf3", "h6"],
+                ["leaf4", "h7"],
+                ["leaf4", "h8"]
+              ],
+      "hosts": {
+        "h1": {
+        },
+        "h2": {
+        },
+        "h3": {
+        },
+        "h4": {
+        },
+        "h5": {
+        },
+        "h6": {
+        },
+        "h7": {
+        },
+        "h8": {
+        }
+      },
+      "switches": {
+        "spine1": {
+          "cli_input": "sw-commands/spine1-commands.txt"
+        },
+        "spine2": {
+          "cli_input": "sw-commands/spine2-commands.txt"
+        },
+        "leaf1": {
+          "cli_input": "sw-commands/leaf1-commands.txt"
+        },
+        "leaf2": {
+          "cli_input": "sw-commands/leaf2-commands.txt"
+        },
+        "leaf3": {
+          "cli_input": "sw-commands/leaf3-commands.txt"
+        },
+        "leaf4": {
+          "cli_input": "sw-commands/leaf4-commands.txt"
+        }
+      }
+    }
+  }
+  
